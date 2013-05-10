@@ -5,7 +5,7 @@ var Cache = module.exports = function() {
   this.client = redis.createClient();
   this.client.on('error', function(err) {
     console.error('redis client error'+err);
-    throw(err);
+    self.connected = false;
   });
   this.client.on('end', function() {
     self.disconnects++;
@@ -26,6 +26,7 @@ var Cache = module.exports = function() {
 
 Cache.prototype.setHash = 
 Cache.prototype.set = function(key, value, ttl, callback) {
+  if (!this.connected) return callback();
   if (typeof ttl === 'function') {
     callback = ttl;
     ttl = this.default_ttl;
@@ -47,6 +48,7 @@ Cache.prototype.set = function(key, value, ttl, callback) {
 };
 
 Cache.prototype.delete = function(key, callback) {
+  if (!this.connected) return callback();
   this.client.del(key, function(err) {
     if (err) {
       self.errors++;
@@ -57,14 +59,17 @@ Cache.prototype.delete = function(key, callback) {
 };
 
 Cache.prototype.getHash = function(key, callback) {
+  if (!this.connected) return callback();
   this._get(key, 'hgetall', callback);
 };
 
 Cache.prototype.get = function(key, callback) {
+  if (!this.connected) return callback();
   this._get(key, 'get', callback);
 };
 
 Cache.prototype._get = function(key, op, callback) {
+  if (!this.connected) return callback();
   var self = this;
   this.client[op](key, function(err, value) {
     if (err) {
@@ -81,5 +86,6 @@ Cache.prototype._get = function(key, op, callback) {
 };
 
 Cache.prototype.total_keys = function(callback) {
+  if (!this.connected) return callback();
   this.client.dbsize(callback); 
 };
